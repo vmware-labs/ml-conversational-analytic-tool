@@ -1,0 +1,48 @@
+name: docs-build
+on :
+  pull_request:
+    paths:
+      - "mcat/*.py"
+
+jobs:
+  docs-build:
+    name: Docs build
+    runs-on: ubuntu-latest
+    env:
+      # see tox.ini
+      TOXENV: docs
+
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v2
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+
+      - name: Install python packages
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade tox
+
+      - name: Run tox (${{ env.TOXENV }})
+        run: tox
+
+      - name: Get git status
+        id: git_status
+        run: |
+          if [ $(git status --porcelain) == "" ]; then
+            echo ::set-output name=uncommitted::false
+          else
+            echo ::set-output name=uncommitted::true
+          fi
+
+      - name: Check for uncommited docs
+        if: ${{steps.git_status.outputs.uncommitted}}
+        run: |
+          echo "Uncommitted docs found. Faliing the job."
+          exit 1
+          
+
+          
